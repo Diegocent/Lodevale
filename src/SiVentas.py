@@ -1,11 +1,13 @@
 from faulthandler import disable
+from multiprocessing import connection
+from sqlite3 import connect
 from sre_parse import State
 from tkinter import *
 from tkinter import messagebox
 from datetime import datetime
 from turtle import width
 from click import command
-import psycopg2
+import mysql.connector
 from tkinter import ttk
 
 from declaracion import *
@@ -13,61 +15,36 @@ from declaracion import *
 
 class Ventas(Frame):
 
-    # # aqui se pueden buscar datos a la base de datos
-    # def buscar(self):
-    #     conn = psycopg2.connect(dbname="lodevale", user="postgres",
-    #                             password="Diego123456", host="localhost", port="5432")
-    #     cursor = conn.cursor()
-    #     consulta = '''SELECT * FROM productos'''
-    #     cursor.execute(consulta)
-
-    #     fila = cursor.fetchall()
-    #     # lista = Listbox(self.frame2, width=100, height=20,
-    #     #                 font=("Arial", 18), fg="#707070")
-    #     # lista.grid(row=10, columnspan=4, sticky=W+E)
-
-    #     # for x in fila:
-    #     #     lista.insert(END, x)
-    #     #     lista.insert(END, "--------------------------------")
-
-    #     conn.commit()
-    #     conn.close()
-
-    # # consulta para eliminar productos
-    def eliminar():
-
+    # aqui se pueden buscar datos a la base de datos
+    def buscar(self):
         miConexion = mysql.connector.connect(
-            host='localhost', user='USUARIO', passwd='PASS', db='neoguias')
+            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
         cur = miConexion.cursor()
-        cur.execute("SELECT nombre, apellido FROM usuarios")
-        for nombre, apellido in cur.fetchall():
-            print(nombre, apellido)
+        cur.execute("SELECT * FROM Producto")
+        lista = cur.fetchall()
+        print(lista)
+        miConexion.close()
+    # consulta para eliminar productos
+
+    def eliminar(self, codigo):
+        miConexion = mysql.connector.connect(
+            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
+        cur = miConexion.cursor()
+        sql = "DELETE FROM Producto WHERE codigo = %s;"
+        cur.execute(sql, [codigo])
+        miConexion.commit()
         miConexion.close()
 
-    # def eliminar(nombre):
-    #     conn = psycopg2.connect(dbname="lodevale", user="postgres",
-    #                             password="Diego123456", host="localhost", port="5432")
-    #     cursor = conn.cursor()
-    #     consulta = '''DELETE FROM productos WHERE nombre = %s; '''
-    #     cursor.execute(consulta, [nombre])
-    #     print('eliminado')
-    #     conn.commit()
-    #     conn.close()
-    #     Ventas.buscar()
-
-    # def buscarnombre(nombre):
-    #     conn = psycopg2.connect(dbname="postgres", user="postgres",
-    #                             password="Diego123456", host="localhost", port="5432")
-    #     cursor = conn.cursor()
-    #     consulta = '''SELECT * FROM productos WHERE nombre = %s'''
-    #     cursor.execute(consulta, [nombre])
-
-    #     fila = cursor.fetchone()
-    #     print(fila)
-
-    #     conn.commit()
-    #     conn.close()
-    #     Ventas.buscar()
+    def buscarnombre(self, codigo):
+        miConexion = mysql.connector.connect(
+            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
+        cur = miConexion.cursor()
+        sql = "SELECT * FROM Producto WHERE codigo = %s;"
+        cur.execute(sql, [codigo])
+        fila = cur.fetchone()
+        print(fila)
+        miConexion.close()
+        return fila
 
     def __init__(self, master=None):
         super().__init__(master)
@@ -109,17 +86,17 @@ class Ventas(Frame):
         self.tv.insert("", END, text=codigo,
                        values=(nombre, cantidad, precio, subtotal))
 
-        if codigo == "0":
-            self.dato = self.entry_name.get()
-            self.ci = self.entry_ci.get()
-            self.SumaLista(nombre, subtotal, cantidad, codigo)
-            self.sumatotal = self.sumatotal + float(subtotal)
-            self.entry_total.config(state='normal')
-            self.entry_total.delete(0, 'end')
-            self.entry_total.insert(0, str(self.sumatotal))
-            self.entry_total.config(state='disabled')
-            self.entry_codigo.delete(0, 'end')
-            self.entry_cantidad.delete(0, 'end')
+        # if codigo == "0":
+        #     self.dato = self.entry_name.get()
+        #     self.ci = self.entry_ci.get()
+        #     self.SumaLista(nombre, subtotal, cantidad, codigo)
+        #     self.sumatotal = self.sumatotal + float(subtotal)
+        #     self.entry_total.config(state='normal')
+        #     self.entry_total.delete(0, 'end')
+        #     self.entry_total.insert(0, str(self.sumatotal))
+        #     self.entry_total.config(state='disabled')
+        #     self.entry_codigo.delete(0, 'end')
+        #     self.entry_cantidad.delete(0, 'end')
         pass
 
     def Platos(self):
@@ -169,12 +146,31 @@ class Ventas(Frame):
         self.entry_total.delete(0, 'end')
         self.entry_total.config(state="disable")
         self.dato = " "
+        self.entry_cantidad.delete(0, 'end')
+        self.entry_codigo.delete(0, 'end')
 
-    # def pasar(self, cant):
-    #     cantidad = cant
-    #     self.entry_codigo.focus()
+    def buscardatos(self, cantidad, codigo):
+        dato = self.buscarnombre(codigo)
+        print(dato)
+        cod = dato[5]
+        cant = cantidad
+        nombre = dato[3]
+        precio = dato[2]
+        total = self.Calculartotal(cantidad, precio)
+        self.cargarlista(cod, cant, nombre, precio, total)
+
+        self.sumatotal = self.sumatotal + float(total)
+        self.entry_total.config(state='normal')
+        self.entry_total.delete(0, 'end')
+        self.entry_total.insert(0, str(self.sumatotal))
+        self.entry_total.config(state='disabled')
+
+    def agregarproducto(self):
+        pass
 
     def create_widfets(self):
+        self.buscarnombre("12")
+
         self.frame1 = Frame()
         self.frame1.place(relx=0.2, rely=0.0, relheight=0.33, relwidth=0.8)
         self.frame1.config(bg="#b4cbca")
@@ -233,6 +229,7 @@ class Ventas(Frame):
         self.entry_descripcion = Entry(self.frame1)
         self.entry_descripcion.grid(
             padx=5, pady=5, row=4, column=2, sticky=E+W, ipady=5)
+
         # aqui se reciben la cantidad y el codigo del objeto
 
         self.entry_cantidad = Entry(self.frame1)
@@ -254,10 +251,12 @@ class Ventas(Frame):
                             bg="#b4cbca", anchor=CENTER)
         self.label6.grid(row=6, column=1, sticky=E+W, columnspan=4)
         # codigo, cantidad, nombre, precio, subtotal)
-        self.button = Button(self.frame1, fg="white", bg="#009E20",
-                             text="Agregar Producto", width=20, command=lambda: self.cargarlista("0", self.entry_cantidad.get(), "Varios", self.entry_codigo.get(), self.Calculartotal(self.entry_codigo.get(), self.entry_cantidad.get())), cursor="hand2")
-        self.button.grid(padx=5, pady=5, row=5, column=5,
-                         sticky=W+E, columnspan=3)
+        self.button1 = Button(self.frame1, fg="white", bg="#009E20",
+                              text="Agregar Producto", width=20, command=lambda: self.buscardatos(self.entry_cantidad.get(), self.entry_codigo.get()), cursor="hand2")
+        self.button1.grid(padx=5, pady=5, row=5, column=5,
+                          sticky=W+E, columnspan=3)
+        # self.button1.bind(
+        #     '<Return>', self.buscardatos(self.entry_cantidad.get(), self.entry_codigo.get()))
 
         self.button2 = Button(self.frame1, fg="black", bg="#00EEFF",
                               text="Platos", width=20, command=lambda: self.Platos(), cursor="hand2")
@@ -298,6 +297,9 @@ class Ventas(Frame):
         self.imagen = Label(self.frame4, image=self.file_image)
         self.imagen.place(x=50, y=50, width=200, height=200)
 
+        self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
+                                     text="Administrar productos", width=20, cursor="hand2", command=lambda: self.agregarproducto())
+        self.botonproductos.place(x=50, y=280, width=200, height=50)
         # apartado para la parte de impresion
         fecha = now.strftime("%d/%m/%Y")
         hora = now.strftime("%H:%M:%S")
