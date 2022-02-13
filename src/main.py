@@ -4,13 +4,6 @@ from declaracion import *
 from datetime import datetime
 
 
-lista = []
-producto = Producto(12, 12, "empanada", 1, 853211005)
-lista.append(producto)
-producto = Producto(12, 12, "croqueta", 2, 853211005148)
-lista.append(producto)
-
-
 # nombre = input()
 # cedula = input()
 # direccion = input()

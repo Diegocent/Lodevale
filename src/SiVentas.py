@@ -5,46 +5,15 @@ from sre_parse import State
 from tkinter import *
 from tkinter import messagebox
 from datetime import datetime
-from turtle import width
+from turtle import bgcolor, width
 from click import command
 import mysql.connector
 from tkinter import ttk
-
+from basededatos import *
 from declaracion import *
 
 
 class Ventas(Frame):
-
-    # aqui se pueden buscar datos a la base de datos
-    def buscar(self):
-        miConexion = mysql.connector.connect(
-            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
-        cur = miConexion.cursor()
-        cur.execute("SELECT * FROM Producto")
-        lista = cur.fetchall()
-        print(lista)
-        miConexion.close()
-    # consulta para eliminar productos
-
-    def eliminar(self, codigo):
-        miConexion = mysql.connector.connect(
-            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
-        cur = miConexion.cursor()
-        sql = "DELETE FROM Producto WHERE codigo = %s;"
-        cur.execute(sql, [codigo])
-        miConexion.commit()
-        miConexion.close()
-
-    def buscarnombre(self, codigo):
-        miConexion = mysql.connector.connect(
-            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
-        cur = miConexion.cursor()
-        sql = "SELECT * FROM Producto WHERE codigo = %s;"
-        cur.execute(sql, [codigo])
-        fila = cur.fetchone()
-        print(fila)
-        miConexion.close()
-        return fila
 
     def __init__(self, master=None):
         super().__init__(master)
@@ -56,6 +25,7 @@ class Ventas(Frame):
         self.ci = " "
         self.contador = 0
         self.efectivo = ""
+        self.db = Bd()
         self.create_widfets()
 
     def Calculartotal(self, n1, n2):
@@ -148,9 +118,10 @@ class Ventas(Frame):
         self.dato = " "
         self.entry_cantidad.delete(0, 'end')
         self.entry_codigo.delete(0, 'end')
+        self.entry_cantidad.focus()
 
     def buscardatos(self, cantidad, codigo):
-        dato = self.buscarnombre(codigo)
+        dato = self.db.buscarnombre(codigo)
         print(dato)
         cod = dato[5]
         cant = cantidad
@@ -164,13 +135,30 @@ class Ventas(Frame):
         self.entry_total.delete(0, 'end')
         self.entry_total.insert(0, str(self.sumatotal))
         self.entry_total.config(state='disabled')
+        self.entry_cantidad.delete(0, 'end')
+        self.entry_codigo.delete(0, 'end')
+        self.entry_cantidad.focus()
 
-    def agregarproducto(self):
+    def agregarproducto(self, event):
+        self.buscardatos(self.entry_cantidad.get(), self.entry_codigo.get())
         pass
 
-    def create_widfets(self):
-        self.buscarnombre("12")
+    def administrarproductos(self):
+        self.productos = Producto(self.master)
+        self.master.wait_window(self.productos.producto)
 
+    def cliente(self, event):
+        miConexion = mysql.connector.connect(
+            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
+        cur = miConexion.cursor()
+        sql = "SELECT * FROM Cliente WHERE ci = %s;"
+        cur.execute(sql, [self.entry_ci.get()])
+        fila = cur.fetchone()
+        self.entry_name.insert(0, fila[1])
+        print(fila)
+        miConexion.close()
+
+    def create_widfets(self):
         self.frame1 = Frame()
         self.frame1.place(relx=0.2, rely=0.0, relheight=0.33, relwidth=0.8)
         self.frame1.config(bg="#b4cbca")
@@ -220,6 +208,7 @@ class Ventas(Frame):
         self.entry_ci = Entry(self.frame1)
         self.entry_ci.grid(padx=5, pady=5, row=4,
                            column=0, sticky=E+W, ipady=5)
+        self.entry_ci.bind('<Return>', self.cliente)
 
         # se puede recibir la descripcion de la empresa que pueda tener
         self.label4 = Label(self.frame1, text="Descripcion:",
@@ -255,8 +244,8 @@ class Ventas(Frame):
                               text="Agregar Producto", width=20, command=lambda: self.buscardatos(self.entry_cantidad.get(), self.entry_codigo.get()), cursor="hand2")
         self.button1.grid(padx=5, pady=5, row=5, column=5,
                           sticky=W+E, columnspan=3)
-        # self.button1.bind(
-        #     '<Return>', self.buscardatos(self.entry_cantidad.get(), self.entry_codigo.get()))
+        self.button1.bind(
+            '<Return>', self.agregarproducto)
 
         self.button2 = Button(self.frame1, fg="black", bg="#00EEFF",
                               text="Platos", width=20, command=lambda: self.Platos(), cursor="hand2")
@@ -298,8 +287,9 @@ class Ventas(Frame):
         self.imagen.place(x=50, y=50, width=200, height=200)
 
         self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
-                                     text="Administrar productos", width=20, cursor="hand2", command=lambda: self.agregarproducto())
+                                     text="Administrar productos", width=20, cursor="hand2", command=lambda: self.administrarproductos())
         self.botonproductos.place(x=50, y=280, width=200, height=50)
+
         # apartado para la parte de impresion
         fecha = now.strftime("%d/%m/%Y")
         hora = now.strftime("%H:%M:%S")
@@ -483,3 +473,146 @@ class Vuelto(Frame):
         self.button2 = Button(self.vuelto, fg="black", bg="#00EEFF",
                               text="OK", width=20, command=lambda: self.guardar(self.entry_monto.get()), cursor="hand2")
         self.button2.pack()
+
+
+class Producto(Frame):
+    def __init__(self, master=None):
+        super().__init__(master, width=320, height=220)
+        self.master = master
+        self.producto = Toplevel()
+        self.producto.title("Administrar productos")
+        self.producto.geometry("1060x720+50+50")
+        self.db = Bd()
+        self.Mostrar()
+
+    def guardardatos(self):
+        self.db.insertar(self.entry_pc.get(), self.entry_pv.get(),
+                         self.entry_np.get(), self.entry_cant.get(), self.entry_barras.get())
+
+    def cargar(self, event):
+        self.guardardatos()
+
+    def guardar(self):
+        self.producto.destroy()
+
+    def Mostrar(self):
+
+        self.frame1 = Frame(self.producto)
+        self.frame1.place(relx=0, rely=0.0, relheight=0.33, relwidth=1)
+        self.frame1.config(bg="#b4cbca")
+
+        self.frame2 = LabelFrame(self.producto)
+        self.frame2.place(relx=0, rely=0.33, relheight=0.5, relwidth=1)
+        self.frame2.config(bg="#deecec")
+
+        self.frame3 = Frame(self.producto)
+        self.frame3.place(relx=0, rely=0.83, relheight=0.17, relwidth=1)
+        self.frame3.config(bg="#d5f4f4")
+
+        self.label1 = Label(self.frame1, text="Nuevo Producto",
+                            font=("Arial", 18), fg="#707070", bg="#b4cbca")
+        self.label1.grid(row=0, column=0)
+
+        # aqui se recibe la fecha
+        self.label2 = Label(self.frame1, text="Fecha",
+                            anchor="w", bg="#b4cbca")
+        self.label2.grid(padx=5, pady=5, row=1, column=0, sticky=E+W)
+
+        self.entry_date = Entry(self.frame1)
+        self.entry_date.grid(padx=5, pady=5, row=2,
+                             column=0, sticky=E+W, ipady=5)
+        now = datetime.now()
+        self.entry_date.insert(0, now.strftime("%d/%m/%Y"))
+        self.entry_date.config(state='disabled')
+
+        # aqui se recibe el codigo de barras del producto
+        self.label3 = Label(self.frame1, text="Codigo de barras",
+                            anchor="w", bg="#b4cbca")
+        self.label3.grid(padx=5, pady=5, row=1, column=1, sticky=E+W)
+
+        self.entry_barras = Entry(self.frame1)
+        self.entry_barras.grid(padx=5, pady=5, row=2,
+                               column=1, sticky=E+W, ipady=5)
+        self.entry_barras.focus()
+        self.entry_barras.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # aqui se recibe el nombre del producto
+        self.label4 = Label(self.frame1, text="Nombre del producto",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=1, column=2, sticky=E+W)
+
+        self.entry_np = Entry(self.frame1)
+        self.entry_np.grid(padx=5, pady=5, row=2,
+                           column=2, sticky=E+W, ipady=5)
+        self.entry_np.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # se puede recibir precio de compra
+        self.label4 = Label(self.frame1, text="Precio de compra",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=3, column=0, sticky=E+W)
+
+        self.entry_pc = Entry(self.frame1)
+        self.entry_pc.grid(
+            padx=5, pady=5, row=4, column=0, sticky=E+W, ipady=5)
+        self.entry_pc.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # se puede recibir precio de venta
+        self.label4 = Label(self.frame1, text="Precio de Venta",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=3, column=1, sticky=E+W)
+
+        self.entry_pv = Entry(self.frame1)
+        self.entry_pv.grid(
+            padx=5, pady=5, row=4, column=1, sticky=E+W, ipady=5)
+        self.entry_pv.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # se puede recibir la cantidad
+        self.label4 = Label(self.frame1, text="Cantidad",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=3, column=2, sticky=E+W)
+
+        self.entry_cant = Entry(self.frame1)
+        self.entry_cant.grid(
+            padx=5, pady=5, row=4, column=2, sticky=E+W, ipady=5)
+        self.entry_cant.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        self.button1 = Button(self.frame1, fg="white", bg="#009E20",
+                              text="Agregar Producto", width=20, command=lambda: self.guardardatos(), cursor="hand2")
+        self.button1.grid(padx=5, pady=5, row=5, column=5,
+                          sticky=W+E, columnspan=3)
+        self.button1.bind('<Return>', self.cargar)
+
+        # en esta parte se controla la tabla
+        self.scroll = Scrollbar(self.frame2)
+        self.scroll.pack(side=RIGHT, fill=Y)
+        self.tv = ttk.Treeview(self.frame2, columns=(
+            "Colum1", "Colum2", "Colum3", "Colum4"), yscrollcommand=self.scroll.set, selectmode="none")
+        self.tv.pack(expand=True, fill=BOTH)
+        self.scroll.config(command=self.tv.yview)
+        self.tv.heading("#0", text="Codigo de barras", anchor=CENTER)
+        self.tv.heading("Colum1", text="Nombre",
+                        anchor=CENTER)
+        self.tv.heading("Colum2", text="Precio de Compra",
+                        anchor=CENTER)
+        self.tv.heading("Colum3", text="Precio de Venta", anchor=CENTER)
+        self.tv.heading("Colum4", text="Cantidad",
+                        anchor=CENTER)
+
+        # aqui se muestra el total
+        # self.Total = Label(self.frame3, text="Total",
+        #                    bg="#BDEDBD", font=("Arial", 24))
+        # self.Total.grid(row=0, column=0, sticky=E+W,
+        #                 columnspan=3, padx=2, pady=2, ipady=5)
+
+        # self.entry_total = Entry(self.frame3, font=("Arial", 24))
+        # self.entry_total.grid(padx=5, pady=5, row=0, column=3,
+        #                       columnspan=2, sticky=E+W, ipady=5)
+        # self.entry_total.config(state="disable")
+        self.finalizar = Button(self.frame3, fg="white", bg="#009E20",
+                                text="Finalizar", width=20, cursor="hand2")
+        self.finalizar.place(relx=0.2, rely=0.2)
