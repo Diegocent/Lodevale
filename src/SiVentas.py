@@ -56,19 +56,6 @@ class Ventas(Frame):
         self.tv.insert("", END, text=codigo,
                        values=(nombre, cantidad, precio, subtotal))
 
-        # if codigo == "0":
-        #     self.dato = self.entry_name.get()
-        #     self.ci = self.entry_ci.get()
-        #     self.SumaLista(nombre, subtotal, cantidad, codigo)
-        #     self.sumatotal = self.sumatotal + float(subtotal)
-        #     self.entry_total.config(state='normal')
-        #     self.entry_total.delete(0, 'end')
-        #     self.entry_total.insert(0, str(self.sumatotal))
-        #     self.entry_total.config(state='disabled')
-        #     self.entry_codigo.delete(0, 'end')
-        #     self.entry_cantidad.delete(0, 'end')
-        pass
-
     def Platos(self):
         print(self.entry_name.get())
         self.dato = self.entry_name.get()
@@ -147,6 +134,10 @@ class Ventas(Frame):
         self.productos = Producto(self.master)
         self.master.wait_window(self.productos.producto)
 
+    def modificarproductos(self):
+        self.modproduc = Modulo(self.master)
+        self.master.wait_window(self.modproduc.modulo)
+
     def cliente(self, event):
         miConexion = mysql.connector.connect(
             host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
@@ -158,6 +149,7 @@ class Ventas(Frame):
         print(fila)
         miConexion.close()
 
+    # aqui se genera la pantalla principal
     def create_widfets(self):
         self.frame1 = Frame()
         self.frame1.place(relx=0.2, rely=0.0, relheight=0.33, relwidth=0.8)
@@ -281,14 +273,18 @@ class Ventas(Frame):
 
         # aqui se gestiona el menu de la izquierda
         self.file_image = PhotoImage(
-            file="C:\\Users\\USER\\Desktop\\Lo-de-vale\\lo de vale.png")
+            file="C:\\Users\\USER\\Desktop\\Lo-de-vale\\lodevale.png")
         # self.file_imagezoon = self.file_image.subsample(3)
         self.imagen = Label(self.frame4, image=self.file_image)
         self.imagen.place(x=50, y=50, width=200, height=200)
 
         self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
-                                     text="Administrar productos", width=20, cursor="hand2", command=lambda: self.administrarproductos())
+                                     text="Agregar compras", width=20, cursor="hand2", command=lambda: self.administrarproductos())
         self.botonproductos.place(x=50, y=280, width=200, height=50)
+
+        self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
+                                     text="Modificar compras", width=20, cursor="hand2", command=lambda: self.modificarproductos())
+        self.botonproductos.place(x=50, y=340, width=200, height=50)
 
         # apartado para la parte de impresion
         fecha = now.strftime("%d/%m/%Y")
@@ -307,17 +303,7 @@ class Ventas(Frame):
         self.botonfinalizar.grid(padx=5, pady=5, row=0, column=8,
                                  columnspan=3, sticky=W+E)
 
-    # def enviar(nombre, precio, cantidad):
-    #     conn = psycopg2.connect(dbname="lodevale", user="postgres",
-    #                             password="postgres", host="localhost", port="5432")
-    #     cursor = conn.cursor()
-    #     consulta = '''INSERT INTO productos(nombre, precio, cantidad) VALUES (%s,%s,%s)'''
-    #     cursor.execute(consulta, (nombre, precio, cantidad))
-    #     print('datos guardados')
-    #     conn.commit()
-    #     conn.close()
-    #     Ventas.buscar()
-
+    # aqui se imprime en la impresora de ticket
     def imprimir(self, fecha, hora, caja, ci, nomcliente, cifun, nomfuncio, vuelto):
 
         impresion = open(r'\\localhost\\Miimpresora', 'w')
@@ -348,6 +334,8 @@ class Ventas(Frame):
         impresion.write(" *Muchas gracias por su compra* \n")
 
         impresion.close()
+
+# aqui se muestra la pantalla de peso del plato
 
 
 class TipoPlato(Frame):
@@ -410,6 +398,8 @@ class TipoPlato(Frame):
         self.button2.grid(padx=5, pady=5, row=7, column=1,
                           columnspan=3, sticky=W+E)
         # self.numero = int(self.entry_kilo)
+
+# aqui se muestra la pantalla vuelto
 
 
 class Vuelto(Frame):
@@ -474,20 +464,40 @@ class Vuelto(Frame):
                               text="OK", width=20, command=lambda: self.guardar(self.entry_monto.get()), cursor="hand2")
         self.button2.pack()
 
+# aqui se agregan los productos
+
 
 class Producto(Frame):
     def __init__(self, master=None):
         super().__init__(master, width=320, height=220)
         self.master = master
         self.producto = Toplevel()
-        self.producto.title("Administrar productos")
+        self.producto.title("Agregar productos")
         self.producto.geometry("1060x720+50+50")
         self.db = Bd()
         self.Mostrar()
 
+    def cargarlista(self, codigo, nombre, precioc, preciov, cantidad):
+        self.tv.insert("", END, text=codigo,
+                       values=(nombre, precioc, preciov, cantidad))
+
+    def mostrartabla(self):
+        dato = self.db.buscar()
+        for x in dato:
+            self.cargarlista(x[5], x[3], x[1], x[2], x[4])
+            print(x)
+
     def guardardatos(self):
         self.db.insertar(self.entry_pc.get(), self.entry_pv.get(),
                          self.entry_np.get(), self.entry_cant.get(), self.entry_barras.get())
+        self.entry_barras.delete(0, 'end')
+        self.entry_cant.delete(0, 'end')
+        self.entry_np.delete(0, 'end')
+        self.entry_pc.delete(0, 'end')
+        self.entry_pv.delete(0, 'end')
+        self.entry_barras.focus()
+        self.tv.delete(*self.tv.get_children())
+        self.mostrartabla()
 
     def cargar(self, event):
         self.guardardatos()
@@ -602,6 +612,7 @@ class Producto(Frame):
         self.tv.heading("Colum3", text="Precio de Venta", anchor=CENTER)
         self.tv.heading("Colum4", text="Cantidad",
                         anchor=CENTER)
+        self.mostrartabla()
 
         # aqui se muestra el total
         # self.Total = Label(self.frame3, text="Total",
@@ -614,5 +625,176 @@ class Producto(Frame):
         #                       columnspan=2, sticky=E+W, ipady=5)
         # self.entry_total.config(state="disable")
         self.finalizar = Button(self.frame3, fg="white", bg="#009E20",
-                                text="Finalizar", width=20, cursor="hand2")
-        self.finalizar.place(relx=0.2, rely=0.2)
+                                text="Finalizar", width=20, command=lambda: self.guardar(), cursor="hand2")
+        self.finalizar.place(relx=0.2, rely=0.2, relheight=0.5, relwidth=0.5)
+
+# aqui se modifican los productos
+
+
+class Modulo(Frame):
+    def __init__(self, master=None):
+        super().__init__(master, width=320, height=220)
+        self.master = master
+        self.modulo = Toplevel()
+        self.modulo.title("Modificar productos")
+        self.modulo.geometry("1060x720+50+50")
+        self.db = Bd()
+        self.Mostrar()
+
+    def cargarlista(self, codigo, nombre, precioc, preciov, cantidad):
+        self.tv.insert("", END, text=codigo,
+                       values=(nombre, precioc, preciov, cantidad))
+
+    def mostrartabla(self):
+        dato = self.db.buscar()
+        for x in dato:
+            self.cargarlista(x[5], x[3], x[1], x[2], x[4])
+
+    def guardardatos(self):
+        self.db.modificar(self.entry_pc.get(), self.entry_pv.get(),
+                          self.entry_np.get(), self.entry_cant.get(), self.entry_barras.get())
+        self.entry_barras.delete(0, 'end')
+        self.entry_cant.delete(0, 'end')
+        self.entry_np.delete(0, 'end')
+        self.entry_pc.delete(0, 'end')
+        self.entry_pv.delete(0, 'end')
+        self.entry_barras.focus()
+        self.tv.delete(*self.tv.get_children())
+        self.mostrartabla()
+
+    def cargar(self, event):
+        self.guardardatos()
+
+    def guardar(self):
+        self.modulo.destroy()
+
+    def cargardatos(self, event):
+        self.entry_np.focus()
+
+        temp = self.db.buscarnombre(self.entry_barras.get())
+        self.entry_np.insert(0, temp[3])
+        self.entry_pc.insert(0, temp[1])
+        self.entry_pv.insert(0, temp[2])
+        self.entry_cant.insert(0, temp[4])
+
+    def Mostrar(self):
+
+        self.frame1 = Frame(self.modulo)
+        self.frame1.place(relx=0, rely=0.0, relheight=0.33, relwidth=1)
+        self.frame1.config(bg="#b4cbca")
+
+        self.frame2 = LabelFrame(self.modulo)
+        self.frame2.place(relx=0, rely=0.33, relheight=0.5, relwidth=1)
+        self.frame2.config(bg="#deecec")
+
+        self.frame3 = Frame(self.modulo)
+        self.frame3.place(relx=0, rely=0.83, relheight=0.17, relwidth=1)
+        self.frame3.config(bg="#d5f4f4")
+
+        self.label1 = Label(self.frame1, text="Nuevo Producto",
+                            font=("Arial", 18), fg="#707070", bg="#b4cbca")
+        self.label1.grid(row=0, column=0)
+
+        # aqui se recibe la fecha
+        self.label2 = Label(self.frame1, text="Fecha",
+                            anchor="w", bg="#b4cbca")
+        self.label2.grid(padx=5, pady=5, row=1, column=0, sticky=E+W)
+
+        self.entry_date = Entry(self.frame1)
+        self.entry_date.grid(padx=5, pady=5, row=2,
+                             column=0, sticky=E+W, ipady=5)
+        now = datetime.now()
+        self.entry_date.insert(0, now.strftime("%d/%m/%Y"))
+        self.entry_date.config(state='disabled')
+
+        # aqui se recibe el codigo de barras del producto
+        self.label3 = Label(self.frame1, text="Codigo de barras",
+                            anchor="w", bg="#b4cbca")
+        self.label3.grid(padx=5, pady=5, row=1, column=1, sticky=E+W)
+
+        self.entry_barras = Entry(self.frame1)
+        self.entry_barras.grid(padx=5, pady=5, row=2,
+                               column=1, sticky=E+W, ipady=5)
+        self.entry_barras.focus()
+        self.entry_barras.bind(
+            '<Return>', self.cargardatos)
+
+        # aqui se recibe el nombre del producto
+        self.label4 = Label(self.frame1, text="Nombre del producto",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=1, column=2, sticky=E+W)
+
+        self.entry_np = Entry(self.frame1)
+        self.entry_np.grid(padx=5, pady=5, row=2,
+                           column=2, sticky=E+W, ipady=5)
+        self.entry_np.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # se puede recibir precio de compra
+        self.label4 = Label(self.frame1, text="Precio de compra",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=3, column=0, sticky=E+W)
+
+        self.entry_pc = Entry(self.frame1)
+        self.entry_pc.grid(
+            padx=5, pady=5, row=4, column=0, sticky=E+W, ipady=5)
+        self.entry_pc.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # se puede recibir precio de venta
+        self.label4 = Label(self.frame1, text="Precio de Venta",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=3, column=1, sticky=E+W)
+
+        self.entry_pv = Entry(self.frame1)
+        self.entry_pv.grid(
+            padx=5, pady=5, row=4, column=1, sticky=E+W, ipady=5)
+        self.entry_pv.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # se puede recibir la cantidad
+        self.label4 = Label(self.frame1, text="Cantidad",
+                            anchor="w", bg="#b4cbca")
+        self.label4.grid(padx=5, pady=5, row=3, column=2, sticky=E+W)
+
+        self.entry_cant = Entry(self.frame1)
+        self.entry_cant.grid(
+            padx=5, pady=5, row=4, column=2, sticky=E+W, ipady=5)
+        self.entry_cant.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        self.button1 = Button(self.frame1, fg="white", bg="#009E20",
+                              text="Modificar Producto", width=20, command=lambda: self.guardardatos(), cursor="hand2")
+        self.button1.grid(padx=5, pady=5, row=5, column=5,
+                          sticky=W+E, columnspan=3)
+        self.button1.bind('<Return>', self.cargar)
+
+        # en esta parte se controla la tabla
+        self.scroll = Scrollbar(self.frame2)
+        self.scroll.pack(side=RIGHT, fill=Y)
+        self.tv = ttk.Treeview(self.frame2, columns=(
+            "Colum1", "Colum2", "Colum3", "Colum4"), yscrollcommand=self.scroll.set, selectmode="none")
+        self.tv.pack(expand=True, fill=BOTH)
+        self.scroll.config(command=self.tv.yview)
+        self.tv.heading("#0", text="Codigo de barras", anchor=CENTER)
+        self.tv.heading("Colum1", text="Nombre",
+                        anchor=CENTER)
+        self.tv.heading("Colum2", text="Precio de Compra",
+                        anchor=CENTER)
+        self.tv.heading("Colum3", text="Precio de Venta", anchor=CENTER)
+        self.tv.heading("Colum4", text="Cantidad",
+                        anchor=CENTER)
+        self.mostrartabla()
+        # aqui se muestra el total
+        # self.Total = Label(self.frame3, text="Total",
+        #                    bg="#BDEDBD", font=("Arial", 24))
+        # self.Total.grid(row=0, column=0, sticky=E+W,
+        #                 columnspan=3, padx=2, pady=2, ipady=5)
+
+        # self.entry_total = Entry(self.frame3, font=("Arial", 24))
+        # self.entry_total.grid(padx=5, pady=5, row=0, column=3,
+        #                       columnspan=2, sticky=E+W, ipady=5)
+        # self.entry_total.config(state="disable")
+        self.finalizar = Button(self.frame3, fg="white", bg="#009E20",
+                                text="Finalizar", width=20, command=lambda: self.guardar(), cursor="hand2")
+        self.finalizar.place(relx=0.2, rely=0.2, relheight=0.5, relwidth=0.5)

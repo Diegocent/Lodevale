@@ -13,8 +13,8 @@ class Bd():
         cur = miConexion.cursor()
         cur.execute("SELECT * FROM Producto")
         lista = cur.fetchall()
-        print(lista)
         miConexion.close()
+        return lista
     # consulta para eliminar productos
 
     def eliminar(self, codigo):
@@ -44,5 +44,17 @@ class Bd():
         print("insercion exitosa")
         sql = "INSERT INTO Producto (precioc, preciov,nombre,cantidad,codigo) VALUES (%s,%s,%s,%s,%s);"
         cur.execute(sql, (pc, pv, nombre, cant, codigo))
+        miConexion.commit()
+        miConexion.close()
+
+    def modificar(self, pc, pv, nombre, cant, codigo):
+        miConexion = mysql.connector.connect(
+            host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
+        cur = miConexion.cursor()
+        print("actualizacion exitosa")
+        sql = "UPDATE Producto SET precioc = '{}', preciov = '{}', nombre = '{}', cantidad = '{}', codigo = '{}' WHERE codigo = '{}';".format(
+            pc, pv, nombre, cant, codigo, codigo)
+        cur.execute(sql)
+        print("actualizacion exitosa")
         miConexion.commit()
         miConexion.close()
