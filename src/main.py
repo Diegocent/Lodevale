@@ -57,7 +57,6 @@ boton.pack(ipadx=20, ipady=5, padx=5, pady=5)
 boton.bind('<Return>', enviar)
 
 login.mainloop()
-
 root = Tk()
 root.title("En lo de Vale sistem")
 root.geometry("1500x800+0+0")

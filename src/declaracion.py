@@ -19,12 +19,13 @@ class Cliente:
 
 
 class Producto:
-    def __init__(self, monto1, monto2, name, x, cod):
+    def __init__(self, monto1, monto2, name, x, cod, id):
         self.pc = monto1
         self.pv = monto2
         self.nombre = name
         self.cantidad = x
         self.codigo = cod
+        self.id = id
 
 
 class Cajero:

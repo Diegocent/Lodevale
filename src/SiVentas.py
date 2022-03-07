@@ -35,8 +35,8 @@ class Ventas(Frame):
         temp = int(n1)*int(n2)
         return temp
 
-    def SumaLista(self, nombre, precio, cantidad, codigo):
-        producto = TipoProducto(nombre, precio, cantidad, codigo)
+    def SumaLista(self, nombre, precio, cantidad, codigo, id):
+        producto = TipoProducto(nombre, precio, cantidad, codigo, id)
         self.listap.append(producto)
         for x in self.listap:
             print(x.nombre)
@@ -72,7 +72,7 @@ class Ventas(Frame):
                          self.ventanaplatos.nombre, self.ventanaplatos.precio, self.resultado)
 
         produc = TipoProducto(self.ventanaplatos.nombre, self.resultado,
-                              self.ventanaplatos.numero, self.ventanaplatos.opcion.get())
+                              self.ventanaplatos.numero, self.ventanaplatos.opcion.get(), 0)
         self.listap.append(produc)
 
         self.sumatotal = self.sumatotal + self.resultado
@@ -97,6 +97,8 @@ class Ventas(Frame):
         self.imprimir(fecha, hora, caja, ci, nomcliente,
                       nomfuncio, cifun, self.ventanavuelto.monto)
 
+        self.db.insertarventa(datetime.now(), self.sumatotal)
+
         self.tv.delete(*self.tv.get_children())
         self.listap.clear()
         self.sumatotal = 0
@@ -117,8 +119,10 @@ class Ventas(Frame):
         cant = cantidad
         nombre = dato[3]
         precio = dato[2]
+        id = dato[0]
         total = self.Calculartotal(cantidad, precio)
         self.cargarlista(cod, cant, nombre, precio, total)
+        self.SumaLista(nombre, precio, cantidad, codigo, id)
 
         self.sumatotal = self.sumatotal + float(total)
         self.entry_total.config(state='normal')
@@ -159,7 +163,12 @@ class Ventas(Frame):
         print(fila)
         miConexion.close()
 
+# aqui se cierra la app
+    def finalizar(self):
+        self.db.finalizar()
+        self.master.destroy()
     # aqui se genera la pantalla principal
+
     def create_widfets(self):
 
         print(self.nomfuncio + ' ' + self.cifun + ' ' + self.caja)
@@ -178,6 +187,10 @@ class Ventas(Frame):
         self.frame4 = Frame()
         self.frame4.place(relx=0.0, rely=0.0, relheight=1, relwidth=0.2)
         self.frame4.config(bg="#1b4a4a")
+
+        button = Button(self.frame1, text="Cerrar", font=(
+            "Arial", 18), fg="white", bg="red", command=lambda: self.finalizar())
+        button.place(x=1005, y=10)
 
         self.label1 = Label(self.frame1, text="Nueva venta",
                             font=("Arial", 18), fg="#707070", bg="#b4cbca")
@@ -305,6 +318,10 @@ class Ventas(Frame):
         # apartado para la parte de impresion
         fecha = now.strftime("%d/%m/%Y")
         hora = now.strftime("%H:%M:%S")
+
+        # De esta manera es como se convierte una fecha recuperada de una base de datos
+        # fecha2 = datetime.strptime(fecha, '%d/%m/%Y')
+        # print(fecha2)
 
         ci = self.entry_ci.get()
         nomcliente = self.entry_name.get()
@@ -503,6 +520,7 @@ class Producto(Frame):
         self.producto.title("Agregar productos")
         self.producto.geometry("1060x720+50+50")
         self.db = Bd()
+        self.item = None
         self.Mostrar()
 
     def cargarlista(self, codigo, nombre, precioc, preciov, cantidad):
@@ -516,6 +534,7 @@ class Producto(Frame):
             print(x)
 
     def guardardatos(self):
+        temp = self.db.buscarnombre(self.entry_barras.get())
         self.db.insertar(self.entry_pc.get(), self.entry_pv.get(),
                          self.entry_np.get(), self.entry_cant.get(), self.entry_barras.get())
         self.entry_barras.delete(0, 'end')
@@ -532,6 +551,22 @@ class Producto(Frame):
 
     def guardar(self):
         self.producto.destroy()
+        self.entry_np.focus()
+
+    def buscar(self, event):
+        self.mostrardatos()
+
+    def mostrardatos(self):
+
+        self.item = self.db.buscarnombre(self.entry_barras.get())
+        self.entry_cant.delete(0, 'end')
+        self.entry_np.delete(0, 'end')
+        self.entry_pc.delete(0, 'end')
+        self.entry_pv.delete(0, 'end')
+        self.entry_cant.insert(0, self.item[4])
+        self.entry_np.insert(0, self.item[3])
+        self.entry_pc.insert(0, self.item[1])
+        self.entry_pv.insert(0, self.item[2])
 
     def Mostrar(self):
 
@@ -573,7 +608,7 @@ class Producto(Frame):
                                column=1, sticky=E+W, ipady=5)
         self.entry_barras.focus()
         self.entry_barras.bind(
-            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+            '<Return>', self.buscar)
 
         # aqui se recibe el nombre del producto
         self.label4 = Label(self.frame1, text="Nombre del producto",
@@ -700,6 +735,10 @@ class Modulo(Frame):
         self.entry_np.focus()
 
         temp = self.db.buscarnombre(self.entry_barras.get())
+        self.entry_np.delete(0, 'end')
+        self.entry_pc.delete(0, 'end')
+        self.entry_pv.delete(0, 'end')
+        self.entry_cant.delete(0, 'end')
         self.entry_np.insert(0, temp[3])
         self.entry_pc.insert(0, temp[1])
         self.entry_pv.insert(0, temp[2])
@@ -827,6 +866,8 @@ class Modulo(Frame):
                                 text="Finalizar", width=20, command=lambda: self.guardar(), cursor="hand2")
         self.finalizar.place(relx=0.2, rely=0.2, relheight=0.5, relwidth=0.5)
 
+# aqui se eliminan los productos
+
 
 class Eliminacion(Frame):
     def __init__(self, master=None):
@@ -906,7 +947,7 @@ class Eliminacion(Frame):
             '<Return>', self.cargardatos)
 
         self.button1 = Button(self.frame1, fg="white", bg="#009E20",
-                              text="Modificar Producto", width=20, command=lambda: self.guardardatos(), cursor="hand2")
+                              text="Eliminar Producto", width=20, command=lambda: self.guardardatos(), cursor="hand2")
         self.button1.grid(padx=5, pady=5, row=5, column=5,
                           sticky=W+E, columnspan=3)
         self.button1.bind('<Return>', self.cargar)
@@ -942,52 +983,53 @@ class Eliminacion(Frame):
         self.finalizar.place(relx=0.2, rely=0.2, relheight=0.5, relwidth=0.5)
 
 
-class User(Frame):
-    def __init__(self, master=None):
-        super().__init__(master, width=320, height=220)
-        self.master = master
-        self.user = Toplevel()
-        self.user.title("Login")
-        self.user.geometry("350x220+500+200")
-        # esto oculta la parte del titulo
-        self.user.overrideredirect(True)
-        self.Mostrar()
+# aqui ira lo que es para reporte
+# class User(Frame):
+#     def __init__(self, master=None):
+#         super().__init__(master, width=320, height=220)
+#         self.master = master
+#         self.user = Toplevel()
+#         self.user.title("Login")
+#         self.user.geometry("350x220+500+200")
+#         # esto oculta la parte del titulo
+#         self.user.overrideredirect(True)
+#         self.Mostrar()
 
-    def guardar(self):
+#     def guardar(self):
 
-        self.user.destroy()
+#         self.user.destroy()
 
-    def mandar(self, event):
-        self.guardar(self.entry_kilo.get(), self.opcion.get())
+#     def mandar(self, event):
+#         self.guardar(self.entry_kilo.get(), self.opcion.get())
 
-    def Mostrar(self):
+#     def Mostrar(self):
 
-        # Como StrinVar pero en entero
+#         # Como StrinVar pero en entero
 
-        r1 = Radiobutton(self.user, text="Normal",
-                         value=1, variable=self.opcion, anchor="w")
-        r1.grid(row=1, column=1, sticky=E+W)
-        r2 = Radiobutton(self.user, text="Especial",
-                         value=2, variable=self.opcion, anchor="w")
-        r2.grid(row=2, column=1, sticky=E+W)
-        r3 = Radiobutton(self.user, text="Milanesas",
-                         value=3, variable=self.opcion, anchor="w")
-        r3.grid(row=3, column=1, sticky=E+W)
-        r4 = Radiobutton(self.user, text="Asado",
-                         value=4, variable=self.opcion, anchor="w")
-        r4.grid(row=4, column=1, sticky=E+W)
-        self.k = Label(self.user,
-                       text="Ingrese el kilaje de la comida", anchor="w")
-        self.k.grid(padx=5, pady=5, row=5, column=1, columnspan=2, sticky=E+W)
+#         r1 = Radiobutton(self.user, text="Normal",
+#                          value=1, variable=self.opcion, anchor="w")
+#         r1.grid(row=1, column=1, sticky=E+W)
+#         r2 = Radiobutton(self.user, text="Especial",
+#                          value=2, variable=self.opcion, anchor="w")
+#         r2.grid(row=2, column=1, sticky=E+W)
+#         r3 = Radiobutton(self.user, text="Milanesas",
+#                          value=3, variable=self.opcion, anchor="w")
+#         r3.grid(row=3, column=1, sticky=E+W)
+#         r4 = Radiobutton(self.user, text="Asado",
+#                          value=4, variable=self.opcion, anchor="w")
+#         r4.grid(row=4, column=1, sticky=E+W)
+#         self.k = Label(self.user,
+#                        text="Ingrese el kilaje de la comida", anchor="w")
+#         self.k.grid(padx=5, pady=5, row=5, column=1, columnspan=2, sticky=E+W)
 
-        self.entry_kilo = Entry(self.user)
-        self.entry_kilo.grid(padx=5, pady=5, row=6, column=1,
-                             columnspan=2, sticky=E+W)
-        self.entry_kilo.focus()
-        self.entry_kilo.bind('<Return>', self.mandar)
+#         self.entry_kilo = Entry(self.user)
+#         self.entry_kilo.grid(padx=5, pady=5, row=6, column=1,
+#                              columnspan=2, sticky=E+W)
+#         self.entry_kilo.focus()
+#         self.entry_kilo.bind('<Return>', self.mandar)
 
-        self.button2 = Button(self.user, fg="black", bg="#00EEFF",
-                              text="OK", width=20, command=lambda: self.guardar(self.entry_kilo.get(), self.opcion.get()), cursor="hand2")
-        self.button2.grid(padx=5, pady=5, row=7, column=1,
-                          columnspan=3, sticky=W+E)
-        # self.numero = int(self.entry_kilo)
+#         self.button2 = Button(self.user, fg="black", bg="#00EEFF",
+#                               text="OK", width=20, command=lambda: self.guardar(self.entry_kilo.get(), self.opcion.get()), cursor="hand2")
+#         self.button2.grid(padx=5, pady=5, row=7, column=1,
+#                           columnspan=3, sticky=W+E)
+#         # self.numero = int(self.entry_kilo)
