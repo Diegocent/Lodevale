@@ -18,7 +18,7 @@ class Ventas(Frame):
     def __init__(self, nombre, caja, ci, master=None):
         super().__init__(master)
         self.master = master
-        self.resultado = DoubleVar()
+        self.resultado = 0.0
         self.listap = []
         self.sumatotal = 0.0
         self.dato = " "
@@ -38,12 +38,12 @@ class Ventas(Frame):
     def SumaLista(self, nombre, precio, cantidad, codigo, id):
         producto = TipoProducto(nombre, precio, cantidad, codigo, id)
         self.listap.append(producto)
-        for x in self.listap:
-            print(x.nombre)
+        # for x in self.listap:
+        #     print(x.nombre)
 
     def CalculaPrecio(self, peso, tipo):
-        print(peso)
-        print(str(tipo))
+        # print(peso)
+        # print(str(tipo))
         cal = float(peso)
         if tipo == 1:
             self.resultado = cal*25000
@@ -60,7 +60,7 @@ class Ventas(Frame):
                        values=(nombre, cantidad, precio, subtotal))
 
     def Platos(self):
-        print(self.entry_name.get())
+        # print(self.entry_name.get())
         self.dato = self.entry_name.get()
         self.ci = self.entry_ci.get()
 
@@ -81,40 +81,58 @@ class Ventas(Frame):
         self.entry_total.insert(0, str(self.sumatotal))
         self.entry_total.config(state='disabled')
 
-        for x in self.listap:
-            print(x.nombre)
+        # for x in self.listap:
+        #     print(x.nombre)
 
     def Vueltos(self, fecha, hora, caja, ci, nomcliente, nomfuncio, cifun):
         self.ventanavuelto = Vuelto(self.sumatotal, self.master)
         self.master.wait_window(self.ventanavuelto.vuelto)
-        self.contador = self.contador + 1
-        self.efectivo = self.ventanavuelto.nuevo
-        self.imprimir(fecha, hora, caja, ci, nomcliente,
-                      nomfuncio, cifun, self.ventanavuelto.monto)
+        if self.ventanavuelto.nuevo > 0:
+            self.contador = self.contador + 1
+            self.efectivo = self.ventanavuelto.nuevo
+            self.imprimir(fecha, hora, caja, ci, nomcliente,
+                          nomfuncio, cifun, self.ventanavuelto.monto)
 
-        messagebox.showinfo(message="Compra culminada",
-                            title="Completado con exito")
-        self.imprimir(fecha, hora, caja, ci, nomcliente,
-                      nomfuncio, cifun, self.ventanavuelto.monto)
+            messagebox.showinfo(message="Compra culminada",
+                                title="Completado con exito")
+            self.imprimir(fecha, hora, caja, ci, nomcliente,
+                          nomfuncio, cifun, self.ventanavuelto.monto)
 
-        self.db.insertarventa(datetime.now(), self.sumatotal)
+            self.tv.delete(*self.tv.get_children())
 
-        self.tv.delete(*self.tv.get_children())
-        self.listap.clear()
-        self.sumatotal = 0
-        self.entry_name.delete(0, 'end')
-        self.entry_ci.delete(0, 'end')
-        self.entry_total.config(state="normal")
-        self.entry_total.delete(0, 'end')
-        self.entry_total.config(state="disable")
-        self.dato = " "
-        self.entry_cantidad.delete(0, 'end')
-        self.entry_codigo.delete(0, 'end')
-        self.entry_cantidad.focus()
+            self.entry_name.delete(0, 'end')
+            self.entry_ci.delete(0, 'end')
+            self.entry_total.config(state="normal")
+            self.entry_total.delete(0, 'end')
+            self.entry_total.config(state="disable")
+            self.dato = " "
+            self.entry_cantidad.delete(0, 'end')
+            self.entry_codigo.delete(0, 'end')
+
+            # print(str(self.sumatotal))
+            self.db.insertarventa(datetime.now(), str(self.sumatotal))
+            # print(self.db.buscarUltimaVenta())
+            id = self.db.buscarUltimaVenta()
+            for x in self.listap:
+                self.db.insertardescripcion(id[0], x.id)
+
+            for x in self.listap:
+                cant = self.db.buscarnombre(x.codigo)[4] - int(x.cantidad)
+                print(cant)
+                self.db.modificarporventa(x.id, cant)
+
+            self.listap.clear()
+            self.sumatotal = 0.0
+            self.db.finalizar()
+            self.continuar()
+            self.entry_cantidad.focus()
+
+    def continuar(self):
+        self.db.iniciar()
 
     def buscardatos(self, cantidad, codigo):
         dato = self.db.buscarnombre(codigo)
-        print(dato)
+        # print(dato)
         cod = dato[5]
         cant = cantidad
         nombre = dato[3]
@@ -139,18 +157,24 @@ class Ventas(Frame):
     # aqui se manda a la ventana de agregar producto
 
     def administrarproductos(self):
+        self.db.finalizar()
         self.productos = Producto(self.master)
         self.master.wait_window(self.productos.producto)
+        self.db.iniciar()
     # aqui se manda a la ventana de modificar productos
 
     def modificarproductos(self):
+        self.db.finalizar()
         self.modproduc = Modulo(self.master)
         self.master.wait_window(self.modproduc.modulo)
+        self.db.iniciar()
     # aqui se manda a la ventana de eliminar productos
 
     def eliminarproductos(self):
+        self.db.finalizar()
         self.eliminar = Eliminacion(self.master)
         self.master.wait_window(self.eliminar.eliminar)
+        self.db.iniciar()
 
     def cliente(self, event):
         miConexion = mysql.connector.connect(
@@ -160,7 +184,7 @@ class Ventas(Frame):
         cur.execute(sql, [self.entry_ci.get()])
         fila = cur.fetchone()
         self.entry_name.insert(0, fila[1])
-        print(fila)
+        # print(fila)
         miConexion.close()
 
 # aqui se cierra la app
@@ -169,9 +193,17 @@ class Ventas(Frame):
         self.master.destroy()
     # aqui se genera la pantalla principal
 
-    def create_widfets(self):
+    def mostrareporte(self):
+        self.db.finalizar()
+        self.reporte = Reporte(self.master)
+        self.master.wait_window(self.reporte.reporte)
+        self.db.iniciar()
 
-        print(self.nomfuncio + ' ' + self.cifun + ' ' + self.caja)
+    def create_widfets(self):
+        # print(self.db.buscarUltimaVenta())
+        # temp = self.db.buscarPorFecha('2022-03-09')
+        # print(temp[-1][2])
+        # print(self.nomfuncio + ' ' + self.cifun + ' ' + self.caja)
         self.frame1 = Frame()
         self.frame1.place(relx=0.2, rely=0.0, relheight=0.33, relwidth=0.8)
         self.frame1.config(bg="#b4cbca")
@@ -315,6 +347,10 @@ class Ventas(Frame):
                                      text="Eliminar productos", width=20, cursor="hand2", command=lambda: self.eliminarproductos())
         self.botonproductos.place(x=50, y=400, width=200, height=50)
 
+        self.botonreporte = Button(self.frame4, fg="black", bg="#00EEFF",
+                                   text="Ver reporte", width=20, cursor="hand2", command=lambda: self.mostrareporte())
+        self.botonreporte.place(x=50, y=460, width=200, height=50)
+
         # apartado para la parte de impresion
         fecha = now.strftime("%d/%m/%Y")
         hora = now.strftime("%H:%M:%S")
@@ -446,7 +482,7 @@ class Vuelto(Frame):
         self.vuelto.geometry("350x220")
         self.monto = 0
         self.cambio = came
-        self.nuevo = " "
+        self.nuevo = 0
         self.Mostrar()
 
     def calcular(self):
@@ -459,7 +495,7 @@ class Vuelto(Frame):
         self.entry_resultado.config(state='disabled')
 
     def guardar(self, nu):
-        self.nuevo = nu
+        self.nuevo = int(nu)
         self.vuelto.destroy()
 
     def enviarguardar(self, event):
@@ -468,6 +504,9 @@ class Vuelto(Frame):
     def vervuelto(self, event):
         self.calcular()
         self.button2.focus()
+
+    def cancelar(self):
+        self.vuelto.destroy()
 
     def Mostrar(self):
 
@@ -501,7 +540,7 @@ class Vuelto(Frame):
         self.entry_resultado.config(state='disabled')
 
         self.button1 = Button(self.vuelto, fg="black", bg="#00EEFF",
-                              text="Calcular", width=20, command=lambda: self.calcular(), cursor="hand2")
+                              text="Cancelar", width=20, command=lambda: self.cancelar(), cursor="hand2")
         self.button1.pack()
 
         self.button2 = Button(self.vuelto, fg="black", bg="#00EEFF",
@@ -531,12 +570,12 @@ class Producto(Frame):
         dato = self.db.buscar()
         for x in dato:
             self.cargarlista(x[5], x[3], x[1], x[2], x[4])
-            print(x)
+            # print(x)
 
     def guardardatos(self):
-        temp = self.db.buscarnombre(self.entry_barras.get())
         self.db.insertar(self.entry_pc.get(), self.entry_pv.get(),
                          self.entry_np.get(), self.entry_cant.get(), self.entry_barras.get())
+        # self.db.finalizar()
         self.entry_barras.delete(0, 'end')
         self.entry_cant.delete(0, 'end')
         self.entry_np.delete(0, 'end')
@@ -550,14 +589,14 @@ class Producto(Frame):
         self.guardardatos()
 
     def guardar(self):
+        self.db.finalizar()
         self.producto.destroy()
-        self.entry_np.focus()
 
     def buscar(self, event):
         self.mostrardatos()
 
     def mostrardatos(self):
-
+        self.entry_np.focus()
         self.item = self.db.buscarnombre(self.entry_barras.get())
         self.entry_cant.delete(0, 'end')
         self.entry_np.delete(0, 'end')
@@ -695,6 +734,7 @@ class Producto(Frame):
 
 
 class Modulo(Frame):
+
     def __init__(self, master=None):
         super().__init__(master, width=320, height=220)
         self.master = master
@@ -729,6 +769,7 @@ class Modulo(Frame):
         self.guardardatos()
 
     def guardar(self):
+        self.db.finalizar()
         self.modulo.destroy()
 
     def cargardatos(self, event):
@@ -899,6 +940,7 @@ class Eliminacion(Frame):
         self.guardardatos()
 
     def guardar(self):
+        self.db.finalizar()
         self.eliminar.destroy()
 
     def cargardatos(self, event):
@@ -981,6 +1023,199 @@ class Eliminacion(Frame):
         self.finalizar = Button(self.frame3, fg="white", bg="#009E20",
                                 text="Finalizar", width=20, command=lambda: self.guardar(), cursor="hand2")
         self.finalizar.place(relx=0.2, rely=0.2, relheight=0.5, relwidth=0.5)
+
+# aqui se genera el reporte
+
+
+class Reporte(Frame):
+    def __init__(self, master=None):
+        super().__init__(master, width=320, height=220)
+        self.master = master
+        self.reporte = Toplevel()
+        self.reporte.title("Reporte")
+        self.reporte.geometry("1060x720+50+50")
+        self.db = Bd()
+        self.Mostrar()
+
+    def cargarlista(self, fecha, total):
+        self.tv.insert("", END, text=fecha,
+                       values=(total))
+
+    def mostrartabla(self, desde, hasta):
+        dato = self.db.buscarentrefechas(desde, hasta)
+        for x in dato:
+            self.cargarlista(x[1], x[2])
+
+    def guardardatos(self):
+        # print(self.desde, self.hasta)
+        temp1 = self.entry_año1.get()+'-'+self.entry_mes1.get() + \
+            '-'+self.entry_dia1.get()
+        # print(temp1)
+        self.dato1 = self.db.buscarPorFecha(temp1)
+        self.d = self.dato1[0][0]
+
+        temp2 = self.entry_año2.get()+'-'+self.entry_mes2.get() + \
+            '-'+self.entry_dia2.get()
+        self.dato2 = self.db.buscarPorFecha(temp2)
+        if self.dato2[0][0]+self.dato2[1][0] > 0:
+            self.h = self.dato2[-1][0]
+        else:
+            self.h = self.dato2[0][0]
+        # print(self.desde, self.hasta)
+        # print(self.db.buscarentrefechas(self.d, self.h))
+        # self.entry_barras.delete(0, 'end')
+        # self.entry_barras.focus()
+        suma = 0.0
+        vector = self.db.buscarentrefechas(self.d, self.h)
+        print(vector)
+        for x in vector:
+            suma = suma + float(x[2])
+        self.entry_total.config(state='normal')
+        self.entry_total.delete(0, 'end')
+        self.entry_total.insert(0, str(suma))
+        self.entry_total.config(state='disabled')
+
+        self.tv.delete(*self.tv.get_children())
+        self.mostrartabla(self.d, self.h)
+
+    def cargar(self, event):
+        self.guardardatos()
+
+    def guardar(self):
+        self.db.finalizar()
+        self.reporte.destroy()
+
+    def cargardatos(self, event):
+        self.button1.focus()
+
+    def Mostrar(self):
+        # temp = self.db.buscarentrefechas(20, 23)
+        # print(temp)
+        self.desde = self.db.buscarPorFecha(
+            datetime.now().strftime("%Y-%m-%d"))
+        self.hasta = self.db.buscarPorFecha(
+            datetime.now().strftime("%Y-%m-%d"))
+        self.frame1 = Frame(self.reporte)
+        self.frame1.place(relx=0, rely=0.0, relheight=0.33, relwidth=1)
+        self.frame1.config(bg="#b4cbca")
+
+        self.frame2 = LabelFrame(self.reporte)
+        self.frame2.place(relx=0, rely=0.33, relheight=0.5, relwidth=1)
+        self.frame2.config(bg="#deecec")
+
+        self.frame3 = Frame(self.reporte)
+        self.frame3.place(relx=0, rely=0.83, relheight=0.17, relwidth=1)
+        self.frame3.config(bg="#d5f4f4")
+
+        self.label1 = Label(self.frame1, text="Seleccione las fechas para ver el reporte",
+                            font=("Arial", 18), fg="#707070", bg="#b4cbca")
+        self.label1.place(x=400, y=5)
+
+        # aqui se recibe la fecha
+        self.label2 = Label(self.frame1, text="Fecha desde",
+                            anchor="w", bg="#b4cbca")
+        self.label2.grid(padx=5, pady=5, row=1, column=0, sticky=E+W)
+
+        self.label7 = Label(self.frame1, text="Dia",
+                            anchor="w", bg="#b4cbca")
+        self.label7.grid(padx=5, pady=5, row=2, column=0, sticky=E+W)
+
+        self.label8 = Label(self.frame1, text="Mes",
+                            anchor="w", bg="#b4cbca")
+        self.label8.grid(padx=5, pady=5, row=2, column=1, sticky=E+W)
+
+        self.label9 = Label(self.frame1, text="Año",
+                            anchor="w", bg="#b4cbca")
+        self.label9.grid(padx=5, pady=5, row=2, column=2, sticky=E+W)
+
+        self.entry_dia1 = Entry(self.frame1)
+        self.entry_dia1.grid(padx=5, pady=5, row=3,
+                             column=0, sticky=E+W, ipady=5)
+        self.entry_dia1.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+        self.entry_mes1 = Entry(self.frame1)
+        self.entry_mes1.grid(padx=5, pady=5, row=3,
+                             column=1, sticky=E+W, ipady=5)
+        self.entry_mes1.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+        self.entry_año1 = Entry(self.frame1)
+        self.entry_año1.grid(padx=5, pady=5, row=3,
+                             column=2, sticky=E+W, ipady=5)
+        self.entry_año1.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # aqui se registra la fecha hasta donde ver
+        self.label3 = Label(self.frame1, text="Fecha hasta",
+                            anchor="w", bg="#b4cbca")
+        self.label3.grid(padx=5, pady=5, row=4, column=0, sticky=E+W)
+
+        self.label7 = Label(self.frame1, text="Dia",
+                            anchor="w", bg="#b4cbca")
+        self.label7.grid(padx=5, pady=5, row=5, column=0, sticky=E+W)
+
+        self.label8 = Label(self.frame1, text="Mes",
+                            anchor="w", bg="#b4cbca")
+        self.label8.grid(padx=5, pady=5, row=5, column=1, sticky=E+W)
+
+        self.label9 = Label(self.frame1, text="Año",
+                            anchor="w", bg="#b4cbca")
+        self.label9.grid(padx=5, pady=5, row=5, column=2, sticky=E+W)
+
+        self.entry_dia2 = Entry(self.frame1)
+        self.entry_dia2.grid(padx=5, pady=5, row=6,
+                             column=0, sticky=E+W, ipady=5)
+        self.entry_dia2.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+        self.entry_mes2 = Entry(self.frame1)
+        self.entry_mes2.grid(padx=5, pady=5, row=6,
+                             column=1, sticky=E+W, ipady=5)
+        self.entry_mes2.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+        self.entry_año2 = Entry(self.frame1)
+        self.entry_año2.grid(padx=5, pady=5, row=6,
+                             column=2, sticky=E+W, ipady=5)
+        self.entry_año2.bind(
+            '<Return>', lambda e: e.widget.tk_focusNext().focus_set())
+
+        # now = datetime.now()
+        # self.entry_date.insert(0, now.strftime("%d/%m/%Y"))
+        # self.entry_date.config(state='disabled')
+
+        # aqui se recibe el codigo de barras del producto
+
+        self.button1 = Button(self.frame1, fg="white", bg="#009E20",
+                              text="Buscar", width=20, command=lambda: self.guardardatos(), cursor="hand2")
+        self.button1.grid(padx=5, pady=5, row=7, column=5,
+                          sticky=W+E, columnspan=3)
+        self.button1.bind('<Return>', self.cargar)
+
+        # en esta parte se controla la tabla
+        self.scroll = Scrollbar(self.frame2)
+        self.scroll.pack(side=RIGHT, fill=Y)
+        self.tv = ttk.Treeview(self.frame2, columns=(
+            "Colum1", "Colum2"), yscrollcommand=self.scroll.set, selectmode="none")
+        self.tv.pack(expand=True, fill=BOTH)
+        self.scroll.config(command=self.tv.yview)
+        self.tv.heading("#0", text="Fecha", anchor=CENTER)
+        self.tv.heading("Colum1", text="Total",
+                        anchor=CENTER)
+        # self.tv.heading("Colum2", text="Sub total",
+        #                 anchor=CENTER)
+        # self.tv.heading("Colum3", text="Precio de Venta", anchor=CENTER)
+        # self.tv.heading("Colum4", text="Cantidad",
+        #                 anchor=CENTER)
+        self.mostrartabla(self.desde[0][0], self.hasta[0][0])
+        self.finalizar = Button(self.frame3, fg="white", bg="#009E20",
+                                text="Finalizar", width=20, command=lambda: self.guardar(), cursor="hand2")
+        self.finalizar.pack(side=RIGHT, ipadx=5, ipady=5)
+        # aqui se muestra el total
+        self.Total = Label(self.frame3, text="Total",
+                           bg="#BDEDBD", font=("Arial", 24))
+        self.Total.pack(side=LEFT)
+
+        self.entry_total = Entry(self.frame3, font=("Arial", 24))
+        self.entry_total.pack(side=LEFT)
+        self.entry_total.config(state="disable")
 
 
 # aqui ira lo que es para reporte

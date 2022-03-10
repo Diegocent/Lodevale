@@ -19,13 +19,12 @@ class Cliente:
 
 
 class Producto:
-    def __init__(self, monto1, monto2, name, x, cod, id):
+    def __init__(self, monto1, monto2, name, x, cod):
         self.pc = monto1
         self.pv = monto2
         self.nombre = name
         self.cantidad = x
         self.codigo = cod
-        self.id = id
 
 
 class Cajero:
@@ -35,8 +34,14 @@ class Cajero:
 
 
 class TipoProducto(object):
-    def __init__(self, name, monto, cantidad, codigo):
+    def __init__(self, name, monto, cantidad, codigo, id):
         self.nombre = name
         self.precio = monto
         self.cantidad = cantidad
         self.codigo = codigo
+        self.id = id
+
+
+# usar el id de esa venta para guardarlo en descripcion e ir insertando producto por producto siempre con el mismo id de venta
+
+# para hacer la busqueda se trae todos los registros desde la ultima fecha y se trae
