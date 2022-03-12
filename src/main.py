@@ -17,8 +17,8 @@ def establecerusuario(dato, clave):
     cur.execute(sql, [dato])
     global fila
     fila = cur.fetchone()
-    print(fila)
-    print(dato)
+    # print(fila)
+    # print(dato)
     if fila[2] == clave:
         login.destroy()
     else:

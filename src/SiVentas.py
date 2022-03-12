@@ -90,13 +90,13 @@ class Ventas(Frame):
         if self.ventanavuelto.nuevo > 0:
             self.contador = self.contador + 1
             self.efectivo = self.ventanavuelto.nuevo
-            self.imprimir(fecha, hora, caja, ci, nomcliente,
-                          nomfuncio, cifun, self.ventanavuelto.monto)
+            # self.imprimir(fecha, hora, caja, ci, nomcliente,
+            #               nomfuncio, cifun, self.ventanavuelto.monto)
 
             messagebox.showinfo(message="Compra culminada",
                                 title="Completado con exito")
-            self.imprimir(fecha, hora, caja, ci, nomcliente,
-                          nomfuncio, cifun, self.ventanavuelto.monto)
+            # self.imprimir(fecha, hora, caja, ci, nomcliente,
+            #               nomfuncio, cifun, self.ventanavuelto.monto)
 
             self.tv.delete(*self.tv.get_children())
 
@@ -109,18 +109,17 @@ class Ventas(Frame):
             self.entry_cantidad.delete(0, 'end')
             self.entry_codigo.delete(0, 'end')
 
-            # print(str(self.sumatotal))
+            print(str(self.sumatotal))
             self.db.insertarventa(datetime.now(), str(self.sumatotal))
             # print(self.db.buscarUltimaVenta())
             id = self.db.buscarUltimaVenta()
             for x in self.listap:
-                self.db.insertardescripcion(id[0], x.id)
+                self.db.insertardescripcion(id[0], x.id, x.cantidad)
 
             for x in self.listap:
                 cant = self.db.buscarnombre(x.codigo)[4] - int(x.cantidad)
-                print(cant)
+                # print(cant)
                 self.db.modificarporventa(x.id, cant)
-
             self.listap.clear()
             self.sumatotal = 0.0
             self.db.finalizar()
@@ -131,6 +130,8 @@ class Ventas(Frame):
         self.db.iniciar()
 
     def buscardatos(self, cantidad, codigo):
+        self.db.finalizar()
+        self.db.iniciar()
         dato = self.db.buscarnombre(codigo)
         # print(dato)
         cod = dato[5]
@@ -335,17 +336,18 @@ class Ventas(Frame):
         self.imagen = Label(self.frame4, image=self.file_image)
         self.imagen.place(x=50, y=50, width=200, height=200)
 
-        self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
-                                     text="Agregar compras", width=20, cursor="hand2", command=lambda: self.administrarproductos())
-        self.botonproductos.place(x=50, y=280, width=200, height=50)
+        if(self.nomfuncio == 'Rocio'):
+            self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
+                                         text="Agregar compras", width=20, cursor="hand2", command=lambda: self.administrarproductos())
+            self.botonproductos.place(x=50, y=280, width=200, height=50)
 
-        self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
-                                     text="Modificar Productos", width=20, cursor="hand2", command=lambda: self.modificarproductos())
-        self.botonproductos.place(x=50, y=340, width=200, height=50)
+            self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
+                                         text="Modificar Productos", width=20, cursor="hand2", command=lambda: self.modificarproductos())
+            self.botonproductos.place(x=50, y=340, width=200, height=50)
 
-        self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
-                                     text="Eliminar productos", width=20, cursor="hand2", command=lambda: self.eliminarproductos())
-        self.botonproductos.place(x=50, y=400, width=200, height=50)
+            self.botonproductos = Button(self.frame4, fg="black", bg="#00EEFF",
+                                         text="Eliminar productos", width=20, cursor="hand2", command=lambda: self.eliminarproductos())
+            self.botonproductos.place(x=50, y=400, width=200, height=50)
 
         self.botonreporte = Button(self.frame4, fg="black", bg="#00EEFF",
                                    text="Ver reporte", width=20, cursor="hand2", command=lambda: self.mostrareporte())
@@ -567,12 +569,16 @@ class Producto(Frame):
                        values=(nombre, precioc, preciov, cantidad))
 
     def mostrartabla(self):
+        self.db.finalizar()
+        self.db.iniciar()
         dato = self.db.buscar()
         for x in dato:
             self.cargarlista(x[5], x[3], x[1], x[2], x[4])
-            # print(x)
+        # print(x)
 
     def guardardatos(self):
+        self.db.finalizar()
+        self.db.iniciar()
         self.db.insertar(self.entry_pc.get(), self.entry_pv.get(),
                          self.entry_np.get(), self.entry_cant.get(), self.entry_barras.get())
         # self.db.finalizar()
@@ -596,6 +602,8 @@ class Producto(Frame):
         self.mostrardatos()
 
     def mostrardatos(self):
+        self.db.finalizar()
+        self.db.iniciar()
         self.entry_np.focus()
         self.item = self.db.buscarnombre(self.entry_barras.get())
         self.entry_cant.delete(0, 'end')
@@ -749,11 +757,15 @@ class Modulo(Frame):
                        values=(nombre, precioc, preciov, cantidad))
 
     def mostrartabla(self):
+        self.db.finalizar()
+        self.db.iniciar()
         dato = self.db.buscar()
         for x in dato:
             self.cargarlista(x[5], x[3], x[1], x[2], x[4])
 
     def guardardatos(self):
+        self.db.finalizar()
+        self.db.iniciar()
         self.db.modificar(self.entry_pc.get(), self.entry_pv.get(),
                           self.entry_np.get(), self.entry_cant.get(), self.entry_barras.get())
         self.entry_barras.delete(0, 'end')
@@ -773,6 +785,8 @@ class Modulo(Frame):
         self.modulo.destroy()
 
     def cargardatos(self, event):
+        self.db.finalizar()
+        self.db.iniciar()
         self.entry_np.focus()
 
         temp = self.db.buscarnombre(self.entry_barras.get())
@@ -925,11 +939,15 @@ class Eliminacion(Frame):
                        values=(nombre, precioc, preciov, cantidad))
 
     def mostrartabla(self):
+        self.db.finalizar()
+        self.db.iniciar()
         dato = self.db.buscar()
         for x in dato:
             self.cargarlista(x[5], x[3], x[1], x[2], x[4])
 
     def guardardatos(self):
+        self.db.finalizar()
+        self.db.iniciar()
         self.db.eliminar(self.entry_barras.get())
         self.entry_barras.delete(0, 'end')
         self.entry_barras.focus()
@@ -1042,11 +1060,16 @@ class Reporte(Frame):
                        values=(total))
 
     def mostrartabla(self, desde, hasta):
+        self.db.finalizar()
+        self.db.iniciar()
         dato = self.db.buscarentrefechas(desde, hasta)
+        # print(dato)
         for x in dato:
             self.cargarlista(x[1], x[2])
 
     def guardardatos(self):
+        self.db.finalizar()
+        self.db.iniciar()
         # print(self.desde, self.hasta)
         temp1 = self.entry_año1.get()+'-'+self.entry_mes1.get() + \
             '-'+self.entry_dia1.get()
@@ -1061,13 +1084,9 @@ class Reporte(Frame):
             self.h = self.dato2[-1][0]
         else:
             self.h = self.dato2[0][0]
-        # print(self.desde, self.hasta)
-        # print(self.db.buscarentrefechas(self.d, self.h))
-        # self.entry_barras.delete(0, 'end')
-        # self.entry_barras.focus()
         suma = 0.0
-        vector = self.db.buscarentrefechas(self.d, self.h)
-        print(vector)
+        vector = self.db.buscarentrefechas(
+            self.d, self.h)
         for x in vector:
             suma = suma + float(x[2])
         self.entry_total.config(state='normal')
@@ -1193,7 +1212,7 @@ class Reporte(Frame):
         self.scroll = Scrollbar(self.frame2)
         self.scroll.pack(side=RIGHT, fill=Y)
         self.tv = ttk.Treeview(self.frame2, columns=(
-            "Colum1", "Colum2"), yscrollcommand=self.scroll.set, selectmode="none")
+            "Colum1"), yscrollcommand=self.scroll.set, selectmode="none")
         self.tv.pack(expand=True, fill=BOTH)
         self.scroll.config(command=self.tv.yview)
         self.tv.heading("#0", text="Fecha", anchor=CENTER)
@@ -1204,7 +1223,6 @@ class Reporte(Frame):
         # self.tv.heading("Colum3", text="Precio de Venta", anchor=CENTER)
         # self.tv.heading("Colum4", text="Cantidad",
         #                 anchor=CENTER)
-        self.mostrartabla(self.desde[0][0], self.hasta[0][0])
         self.finalizar = Button(self.frame3, fg="white", bg="#009E20",
                                 text="Finalizar", width=20, command=lambda: self.guardar(), cursor="hand2")
         self.finalizar.pack(side=RIGHT, ipadx=5, ipady=5)
@@ -1216,6 +1234,29 @@ class Reporte(Frame):
         self.entry_total = Entry(self.frame3, font=("Arial", 24))
         self.entry_total.pack(side=LEFT)
         self.entry_total.config(state="disable")
+
+        if self.hasta[0][0]+self.hasta[1][0] > 0:
+            self.mostrartabla(self.desde[0][0], self.hasta[-1][0])
+            suma = 0.0
+            vector = self.db.buscarentrefechas(
+                self.desde[0][0], self.hasta[-1][0])
+            for x in vector:
+                suma = suma + float(x[2])
+            self.entry_total.config(state='normal')
+            self.entry_total.delete(0, 'end')
+            self.entry_total.insert(0, str(suma))
+            self.entry_total.config(state='disabled')
+        else:
+            self.mostrartabla(self.desde[0][0], self.hasta[0][0])
+            suma = 0.0
+            vector = self.db.buscarentrefechas(
+                self.desde[0][0], self.hasta[0][0])
+            for x in vector:
+                suma = suma + float(x[2])
+            self.entry_total.config(state='normal')
+            self.entry_total.delete(0, 'end')
+            self.entry_total.insert(0, str(suma))
+            self.entry_total.config(state='disabled')
 
 
 # aqui ira lo que es para reporte

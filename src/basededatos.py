@@ -62,17 +62,18 @@ class Bd():
 
 #  aqui ira todo lo referente a ventas
 
+
     def insertarventa(self, fecha, total):
-        # print("venta insertada")
+        print("venta insertada")
         sql1 = "INSERT INTO Ventas (fecha,total) VALUES (%s,%s);"
         self.cur.execute(sql1, [fecha, total])
-        # print("avanzo de venta")
+        print("avanzo de venta")
         self.miConexion.commit()
 
-    def insertardescripcion(self, idVenta, idProducto):
+    def insertardescripcion(self, idVenta, idProducto, cantidad):
         # print("descripcion insertada")
-        sql1 = "INSERT INTO Descripcion (idVentas,idProducto) VALUES (%s,%s);"
-        self.cur.execute(sql1, [idVenta, idProducto])
+        sql1 = "INSERT INTO Descripcion (idVentas,idProducto,cant) VALUES (%s,%s,%s);"
+        self.cur.execute(sql1, [idVenta, idProducto, cantidad])
         self.miConexion.commit()
 
     def buscarPorFecha(self, fecha):
