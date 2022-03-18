@@ -20,11 +20,38 @@ def establecerusuario(dato, clave):
     # print(fila)
     # print(dato)
     if fila[2] == clave:
+        sql2 = "SELECT restante FROM CierreCaja WHERE id = %s;"
+        sql3 = "SELECT a.caja, b.id FROM CierreCaja b INNER JOIN Usuario a ON b.idCajero= a.cod"
+
+        cur.execute(sql3)
+        aux2 = cur.fetchall()
+        i = -1
+        print(fila[4])
+        print(aux2)
+        while fila[4] != aux2[i][0]:
+            i -= 1
+        cur.execute(sql2, [aux2[i][1]])
+        aux = cur.fetchone()
+        print(aux)
+        temp = aux[0]
+        print(temp)
+        global cierre
+        cierre = float(temp)
         login.destroy()
     else:
         messagebox.showerror(message="Contraseña incorrecta",
                              title="Error al ingresar la clave")
     miConexion.close()
+
+
+def veranterior(self, row):
+    miConexion = mysql.connector.connect(
+        host='sql716.main-hosting.eu', user='u592463271_DiegoxD ', passwd='Diego123456', db='u592463271_Lodevale', port=3306)
+    cur = miConexion.cursor()
+    sql = "SELECT * FROM Ventas WHERE id IN (SELECT MAX(id) FROM Ventas);"
+    cur.execute(sql, [row])
+    global cierre
+    pass
 
 
 def enviar(event):
@@ -57,13 +84,13 @@ boton.pack(ipadx=20, ipady=5, padx=5, pady=5)
 boton.bind('<Return>', enviar)
 
 login.mainloop()
+
 root = Tk()
 root.title("En lo de Vale sistem")
 root.geometry("1500x800+0+0")
 # root.iconbitmap(
 #     "C:\\Users\\USER\\Desktop\\Lo-de-vale\\lo_de_vale_I4K_icon.ico")
-app = Ventas(fila[1], fila[4], fila[3], root)
+app = Ventas(fila, cierre, root)
 app.mainloop()
-
 
 # app.imprimir(fecha,hora,"1",ci,nomcliente,cifun,nomfuncio,lista)

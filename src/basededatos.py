@@ -62,7 +62,6 @@ class Bd():
 
 #  aqui ira todo lo referente a ventas
 
-
     def insertarventa(self, fecha, total):
         print("venta insertada")
         sql1 = "INSERT INTO Ventas (fecha,total) VALUES (%s,%s);"
@@ -100,3 +99,40 @@ class Bd():
         self.cur.execute(sql)
         # print("actualizacion exitosa")
         self.miConexion.commit()
+
+    def guardarcierre(self, idCajero, fecha, hora, total, restante):
+        sql1 = "INSERT INTO CierreCaja (idCajero,fecha,hora,total,restante) VALUES (%s,%s,%s,%s,%s);"
+        self.cur.execute(sql1, [idCajero, fecha, hora, total, restante])
+        print("ingresado con exito")
+        self.miConexion.commit()
+
+    def cargarproveedor(self, cantidad, productoNombre, Precioc, fecha, NombreProveedor, total):
+        sql1 = "INSERT INTO Proveedor (cantidad,productoNombre,Precioc,fecha,NombreProveedor,total) VALUES (%s,%s,%s,%s,%s,%s);"
+        self.cur.execute(
+            sql1, [cantidad, productoNombre, Precioc, fecha, NombreProveedor, total])
+        print("ingresado con exito")
+        self.miConexion.commit()
+
+    def buscarproducto(self, nombre):
+        sql = "SELECT * FROM Proveedor WHERE productoNombre =%s;"
+        self.cur.execute(sql, [nombre])
+        fila = self.cur.fetchone()
+        return fila
+
+    def buscarProveedor(self):
+        sql = "SELECT * FROM Proveedor;"
+        self.cur.execute(sql)
+        fila = self.cur.fetchall()
+        return fila
+
+    def buscaProveedorentrefechas(self, fecha1, fecha2):
+        sql = "SELECT * FROM Proveedor WHERE id BETWEEN %s AND %s;"
+        self.cur.execute(sql, [fecha1, fecha2])
+        fila = self.cur.fetchall()
+        return fila
+
+    def buscarProveedorPorFecha(self, fecha):
+        sql = "SELECT * FROM Proveedor WHERE fecha = %s;"
+        self.cur.execute(sql, [fecha])
+        fila = self.cur.fetchall()
+        return fila
